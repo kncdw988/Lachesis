@@ -1,0 +1,2 @@
+SQLITE_DATABASE_PATH = "database/database.db"
+SQLITE_DATABASE_URI = f"sqlite:///{SQLITE_DATABASE_PATH}"
