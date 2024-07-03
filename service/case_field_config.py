@@ -22,7 +22,7 @@ class CaseFieldConfigService:
                 enum_options = field_config.enum_options[1:-1] if field_config.enum_options else ""
             else:
                 enum_options = ""
-            row = [field_config.field_name, field_type_display.value, enum_options]
+            row = [field_config.field_name, field_type_display.value, enum_options, field_config.field_num]
             table.append(row)
         return table
 

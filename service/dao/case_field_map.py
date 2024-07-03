@@ -3,7 +3,7 @@ from service.dao.base_dao import BaseDao
 from utils import const
 from typing import List, Optional
 import json
-from sqlite3 import IntegrityError
+from sqlalchemy.exc import IntegrityError
 import logging
 
 
@@ -33,12 +33,14 @@ class CaseFieldMapDao(BaseDao):
                 )
             self.session.commit()
         except IntegrityError as e:
-            logging.warning(f"字段名称重复：{field_name}")
+            logging.error(f"字段名称重复：{field_name}")
             self.session.close()
+            raise Exception(f"字段名称重复：{field_name}")
         except Exception as e:
             logging.error(f"创建字段映射失败：{e}")
             self.session.close()
-        finally:
+            raise Exception(f"创建字段映射失败：{e}")
+        else:
             db_revc = self.session.get(CaseFieldMap, field_name)
             return db_revc
 

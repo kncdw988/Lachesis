@@ -11,10 +11,11 @@ from qfluentwidgets import (
     RoundMenu,
     Action,
     StrongBodyLabel, PushButton, LineEdit, PlainTextEdit,
-    MessageBoxBase, ComboBox, InfoBar, InfoBarPosition
+    MessageBoxBase, ComboBox, InfoBar, InfoBarPosition, PrimaryPushButton,
+    FlowLayout
 )
 from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QScrollArea
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QButtonGroup
 from utils import isWin11
 from qframelesswindow import AcrylicWindow as Window
 from service.case_field_config import CaseFieldConfigService
@@ -116,31 +117,34 @@ class FieldConfigBox(MessageBoxBase):
         self._enable_yes_button()
 
     def save(self):
-        field_service = CaseFieldConfigService()
-        if not self.is_edit:
-            if self.enum_options:
-                enum_options = self.enum_options.replace("，", ",")
-                new_field_config = field_service.add_new_field_config(
-                    field_name=self.field_name, field_type_display=self.field_type, enum_options=enum_options.split(",")
-                )
+        try:
+            field_service = CaseFieldConfigService()
+            if not self.is_edit:
+                if self.enum_options:
+                    enum_options = self.enum_options.replace("，", ",")
+                    new_field_config = field_service.add_new_field_config(
+                        field_name=self.field_name, field_type_display=self.field_type, enum_options=enum_options.split(",")
+                    )
+                else:
+                    new_field_config = field_service.add_new_field_config(
+                        field_name=self.field_name, field_type_display=self.field_type
+                    )
+                if new_field_config:
+                    self.parent().add_card(self.field_name, self.field_type)
             else:
-                new_field_config = field_service.add_new_field_config(
-                    field_name=self.field_name, field_type_display=self.field_type
-                )
-            if new_field_config:
-                self.parent().add_card(self.field_name, self.field_type)
-        else:
-            if self.enum_options:
-                enum_options = self.enum_options.replace("，", ",")
-                res = field_service.update_field_config(
-                    old_field_name=self.old_field_name, field_name=self.field_name if self.field_name else None, enum_options=enum_options.split(",") if self.enum_options else None
-                )
-            else:
-                res = field_service.update_field_config(
-                    old_field_name=self.old_field_name, field_name=self.field_name if self.field_name else None
-                )
-            if res:
-                self.parent().update_card(self.old_field_name, self.field_name)
+                if self.enum_options:
+                    enum_options = self.enum_options.replace("，", ",")
+                    res = field_service.update_field_config(
+                        old_field_name=self.old_field_name, field_name=self.field_name if self.field_name else None, enum_options=enum_options.split(",") if self.enum_options else None
+                    )
+                else:
+                    res = field_service.update_field_config(
+                        old_field_name=self.old_field_name, field_name=self.field_name if self.field_name else None
+                    )
+                if res:
+                    self.parent().update_card(self.old_field_name, self.field_name)
+        except Exception as e:
+            self.parent().error_info_bar(str(e))
 
 
 class MicaWindow(Window):
@@ -269,7 +273,7 @@ class ConfigFieldWindow(MicaWindow):
         w.exec()
 
     def error_info_bar(self, error_message: str):
-        InfoBar.error(
+        w = InfoBar.error(
             title='Error',
             content=error_message,
             orient=Qt.Orientation.Horizontal,
@@ -278,6 +282,41 @@ class ConfigFieldWindow(MicaWindow):
             duration=2000,
             parent=self
         )
+        w.show()
+
+
+class AddCaseWindow(MicaWindow):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.service = CaseFieldConfigService()
+        self._table = self.service.table
+
+        self.button_group = QWidget(self)
+        self.button_group_layout = QHBoxLayout()
+        yesButton = PrimaryPushButton(FluentIcon.SAVE, "保存")
+        cancelButton = PushButton(FluentIcon.CANCEL, "取消")
+        self.button_group_layout.addWidget(cancelButton, 0, Qt.AlignmentFlag.AlignJustify)
+        self.button_group_layout.addWidget(yesButton, 0, Qt.AlignmentFlag.AlignJustify)
+        self.button_group.setLayout(self.button_group_layout)
+
+        view_widget = QWidget(self)
+        view_widget_laylout = FlowLayout()
+        view_widget_laylout.setSpacing(6)
+        view_widget_laylout.setContentsMargins(30, 60, 30, 30)
+        view_widget_laylout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        view_widget.setLayout(view_widget_laylout)
+
+        self.vBoxLayout = QVBoxLayout(self)
+
+        self.vBoxLayout.setSpacing(6)
+        self.vBoxLayout.setContentsMargins(30, 60, 30, 30)
+        self.vBoxLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        self.vBoxLayout.addWidget(view_widget, 0, Qt.AlignmentFlag.AlignJustify)
+        self.vBoxLayout.addWidget(self.button_group, 0, Qt.AlignmentFlag.AlignTrailing)
+
+        self.adjustSize()
 
 
 class SourceToolBar(BaseToolBar):
@@ -303,7 +342,8 @@ class SourceToolBar(BaseToolBar):
         w.show()
 
     def click_addCaseButton(self):
-        pass
+        w = AddCaseWindow()
+        w.show()
 
 
 class SourceInterface(BaseInterface):
